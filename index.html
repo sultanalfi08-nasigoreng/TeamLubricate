@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Night Forest FPS with Flashlight & Chaser</title>
 <style>
-  body { margin: 0; overflow: hidden; touch-action: none; -webkit-touch-callout: none; }
+  body { margin: 0; overflow: hidden; touch-action: none; }
   canvas { display: block; }
 
   #info {
@@ -83,7 +83,7 @@
     touch-action: none;
   }
 
-  #movementKnob {
+  #movementHandle {
     position: absolute;
     width: 50px;
     height: 50px;
@@ -92,7 +92,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    transition: transform 0.05s;
+    transition: transform 0.1s;
   }
 
   #lookPad {
@@ -108,7 +108,7 @@
     touch-action: none;
   }
 
-  #lookKnob {
+  #lookHandle {
     position: absolute;
     width: 50px;
     height: 50px;
@@ -117,7 +117,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    transition: transform 0.05s;
+    transition: transform 0.1s;
   }
 
   #sprintButton {
@@ -141,7 +141,6 @@
     pointer-events: auto;
     touch-action: none;
     user-select: none;
-    -webkit-user-select: none;
     transition: background 0.2s, transform 0.1s;
   }
 
@@ -169,7 +168,6 @@
     pointer-events: auto;
     touch-action: none;
     user-select: none;
-    -webkit-user-select: none;
     z-index: 10;
   }
 
@@ -193,7 +191,6 @@
     font-family: 'Arial', sans-serif;
     text-align: center;
     padding: 20px;
-    touch-action: auto;
   }
 
   #startTitle {
@@ -221,7 +218,6 @@
     transition: background 0.3s, transform 0.2s;
     font-weight: bold;
     letter-spacing: 1px;
-    touch-action: auto;
   }
 
   #startButton:hover, #startButton:active {
@@ -246,7 +242,6 @@
     font-family: 'Arial', sans-serif;
     text-align: center;
     padding: 20px;
-    touch-action: auto;
   }
 
   #gameOverTitle {
@@ -274,7 +269,6 @@
     transition: background 0.3s, transform 0.2s;
     font-weight: bold;
     letter-spacing: 1px;
-    touch-action: auto;
   }
 
   #restartButton:hover, #restartButton:active {
@@ -298,14 +292,12 @@
     background: #000;
     display: none;
     z-index: 200;
-    touch-action: none;
   }
 
   @media (max-width: 768px) {
     #info { font-size: 10px; padding: 5px; }
     #warning { font-size: 16px; }
     #movementPad, #lookPad { width: 100px; height: 100px; }
-    #movementKnob, #lookKnob { width: 40px; height: 40px; }
     #sprintButton { width: 70px; height: 70px; font-size: 12px; }
     #flashlightToggle { width: 50px; height: 50px; font-size: 10px; }
   }
@@ -318,7 +310,7 @@
       left: 20px;
       right: 20px;
     }
-    #movementKnob, #lookKnob { width: 35px; height: 35px; }
+    #movementHandle, #lookHandle { width: 40px; height: 40px; }
     #sprintButton { 
       width: 60px; 
       height: 60px; 
@@ -344,10 +336,10 @@
 <!-- Mobile Controls -->
 <div id="mobileControls">
   <div id="movementPad">
-    <div id="movementKnob"></div>
+    <div id="movementHandle"></div>
   </div>
   <div id="lookPad">
-    <div id="lookKnob"></div>
+    <div id="lookHandle"></div>
   </div>
   <div id="sprintButton">SPRINT</div>
 </div>
@@ -357,14 +349,7 @@
 <!-- Start Screen -->
 <div id="startScreen">
   <h1 id="startTitle">DARK FOREST HORROR</h1>
-  <p id="startText">Navigate through the dark forest with your flashlight. Avoid the creature that hunts you in the darkness.</p>
-  <p id="mobileInstructions" style="display: none; color: #ffcc00; font-size: 16px; margin-top: 10px;">
-    <strong>Mobile Controls:</strong><br>
-    • Left joystick: Move<br>
-    • Right joystick: Look<br>
-    • Green button: Sprint<br>
-    • Top-right: Toggle flashlight
-  </p>
+  <p id="startText">Navigate through the dark forest with your flashlight. Avoid the creature that hunts you in the darkness. Use WASD to move, Shift to sprint, and mouse to look around on desktop. On mobile, use the touch controls.</p>
   <button id="startButton">START GAME</button>
 </div>
 
@@ -376,7 +361,9 @@
 </div>
 
 <!-- Jumpscare Screen -->
-<div id="jumpscareScreen"></div>
+<div id="jumpscareScreen">
+  <!-- Will be filled dynamically -->
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
@@ -387,23 +374,18 @@ let isMobile = false;
 
 // Detect mobile device
 function detectMobile() {
-  const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
          window.innerWidth <= 768;
-  
-  if (isMobileDevice) {
-    document.getElementById('mobileInstructions').style.display = 'block';
-  }
-  
-  return isMobileDevice;
 }
 
 isMobile = detectMobile();
 document.getElementById('deviceInfo').textContent = isMobile ? 'Mobile Mode' : 'Desktop Mode';
 
 // -------- SOUNDS --------
+// Load sounds from asset folder
 const jumpscareSound = new Audio('asset/jumpscare.mp3');
-const chaseSound = new Audio('asset/chase.mp3');
-const ambientSound = new Audio('asset/ambient.mp3');
+const chaseSound = new Audio('asset/chase.mp3'); // You can add chase.mp3 to asset folder
+const ambientSound = new Audio('asset/ambient.mp3'); // You can add ambient.mp3 to asset folder
 
 // Fallback to online sounds if local ones don't exist
 chaseSound.onerror = () => {
@@ -417,7 +399,7 @@ ambientSound.onerror = () => {
 };
 
 jumpscareSound.onerror = () => {
-  console.error("Could not load jumpscare.mp3 from asset folder.");
+  console.error("Could not load jumpscare.mp3 from asset folder. Please ensure the file exists at: asset/jumpscare.mp3");
 };
 
 // Set volume levels
@@ -441,7 +423,7 @@ renderer.domElement.style.touchAction = 'none';
 document.body.appendChild(renderer.domElement);
 
 // -------- NIGHT LIGHTING --------
-scene.add(new THREE.AmbientLight(0x111111));
+scene.add(new THREE.AmbientLight(0x111111)); // very dim ambient light
 
 // Flashlight as spotlight attached to camera
 const flashlight = new THREE.SpotLight(0xffffff, 200, 500, Math.PI/7, 0.5);
@@ -565,9 +547,9 @@ function createBush(x, z) {
 // ---------------- GENERATE FOREST ----------------
 const minDistance = 0.9;
 let attempts = 0;
-for (let i = 0; i < 1500; i++) {
+for (let i = 0; i < 2000; i++) {
   let placed = false;
-  while (!placed && attempts < 10000) {
+  while (!placed && attempts < 15000) {
     attempts++;
     const x = (Math.random() - 0.5) * groundSize;
     const z = (Math.random() - 0.5) * groundSize;
@@ -590,7 +572,7 @@ for (let i = 0; i < 1500; i++) {
   }
 }
 
-for (let i = 0; i < 3000; i++) {
+for (let i = 0; i < 4000; i++) {
   const x = (Math.random() - 0.5) * groundSize;
   const z = (Math.random() - 0.5) * groundSize;
   createBush(x, z);
@@ -616,9 +598,9 @@ document.addEventListener("keyup", e => {
 
 // Mobile touch controls
 const movementPad = document.getElementById('movementPad');
-const movementKnob = document.getElementById('movementKnob');
+const movementHandle = document.getElementById('movementHandle');
 const lookPad = document.getElementById('lookPad');
-const lookKnob = document.getElementById('lookKnob');
+const lookHandle = document.getElementById('lookHandle');
 const sprintButton = document.getElementById('sprintButton');
 const flashlightToggle = document.getElementById('flashlightToggle');
 
@@ -629,47 +611,40 @@ function updatePadRects() {
   lookPadRect = lookPad.getBoundingClientRect();
 }
 
-// Movement pad - SIMPLIFIED TOUCH HANDLING
-movementPad.addEventListener('touchstart', handleMovementStart, { passive: false });
-movementPad.addEventListener('touchmove', handleMovementMove, { passive: false });
-movementPad.addEventListener('touchend', handleMovementEnd, { passive: false });
-movementPad.addEventListener('touchcancel', handleMovementEnd, { passive: false });
-
-function handleMovementStart(e) {
+// Movement pad
+movementPad.addEventListener('touchstart', (e) => {
   if (!gameActive || jumpscareActive) return;
   e.preventDefault();
   if (moveTouchId === null) {
-    const touch = e.touches[0];
+    const touch = e.changedTouches[0];
     moveTouchId = touch.identifier;
     updateMovementPad(touch);
   }
-}
+});
 
-function handleMovementMove(e) {
+movementPad.addEventListener('touchmove', (e) => {
   if (!gameActive || jumpscareActive) return;
   e.preventDefault();
-  for (let i = 0; i < e.touches.length; i++) {
-    const touch = e.touches[i];
+  for (let touch of e.changedTouches) {
     if (touch.identifier === moveTouchId) {
       updateMovementPad(touch);
       break;
     }
   }
-}
+});
 
-function handleMovementEnd(e) {
+movementPad.addEventListener('touchend', (e) => {
   if (!gameActive || jumpscareActive) return;
   e.preventDefault();
-  for (let i = 0; i < e.changedTouches.length; i++) {
-    const touch = e.changedTouches[i];
+  for (let touch of e.changedTouches) {
     if (touch.identifier === moveTouchId) {
       moveTouchId = null;
       movementTouch = { x: 0, y: 0 };
-      movementKnob.style.transform = 'translate(-50%, -50%)';
+      movementHandle.style.transform = 'translate(-50%, -50%)';
       break;
     }
   }
-}
+});
 
 function updateMovementPad(touch) {
   const rect = movementPadRect || movementPad.getBoundingClientRect();
@@ -687,50 +662,43 @@ function updateMovementPad(touch) {
   }
   
   movementTouch = { x, y };
-  movementKnob.style.transform = `translate(${x * 35}%, ${y * 35}%)`;
+  movementHandle.style.transform = `translate(${x * 50}%, ${y * 50}%)`;
 }
 
-// Look pad - SIMPLIFIED TOUCH HANDLING
-lookPad.addEventListener('touchstart', handleLookStart, { passive: false });
-lookPad.addEventListener('touchmove', handleLookMove, { passive: false });
-lookPad.addEventListener('touchend', handleLookEnd, { passive: false });
-lookPad.addEventListener('touchcancel', handleLookEnd, { passive: false });
-
-function handleLookStart(e) {
+// Look pad
+lookPad.addEventListener('touchstart', (e) => {
   if (!gameActive || jumpscareActive) return;
   e.preventDefault();
   if (lookTouchId === null) {
-    const touch = e.touches[0];
+    const touch = e.changedTouches[0];
     lookTouchId = touch.identifier;
     updateLookPad(touch);
   }
-}
+});
 
-function handleLookMove(e) {
+lookPad.addEventListener('touchmove', (e) => {
   if (!gameActive || jumpscareActive) return;
   e.preventDefault();
-  for (let i = 0; i < e.touches.length; i++) {
-    const touch = e.touches[i];
+  for (let touch of e.changedTouches) {
     if (touch.identifier === lookTouchId) {
       updateLookPad(touch);
       break;
     }
   }
-}
+});
 
-function handleLookEnd(e) {
+lookPad.addEventListener('touchend', (e) => {
   if (!gameActive || jumpscareActive) return;
   e.preventDefault();
-  for (let i = 0; i < e.changedTouches.length; i++) {
-    const touch = e.changedTouches[i];
+  for (let touch of e.changedTouches) {
     if (touch.identifier === lookTouchId) {
       lookTouchId = null;
       lookTouch = { x: 0, y: 0 };
-      lookKnob.style.transform = 'translate(-50%, -50%)';
+      lookHandle.style.transform = 'translate(-50%, -50%)';
       break;
     }
   }
-}
+});
 
 function updateLookPad(touch) {
   const rect = lookPadRect || lookPad.getBoundingClientRect();
@@ -747,30 +715,23 @@ function updateLookPad(touch) {
   }
   
   lookTouch = { x, y };
-  lookKnob.style.transform = `translate(${x * 35}%, ${y * 35}%)`;
+  lookHandle.style.transform = `translate(${x * 50}%, ${y * 50}%)`;
 }
 
-// Sprint button - SIMPLIFIED
+// Sprint button
 sprintButton.addEventListener('touchstart', (e) => {
   if (!gameActive || jumpscareActive) return;
   e.preventDefault();
   isSprinting = true;
   sprintButton.classList.add('active');
-}, { passive: false });
+});
 
 sprintButton.addEventListener('touchend', (e) => {
   if (!gameActive || jumpscareActive) return;
   e.preventDefault();
   isSprinting = false;
   sprintButton.classList.remove('active');
-}, { passive: false });
-
-sprintButton.addEventListener('touchcancel', (e) => {
-  if (!gameActive || jumpscareActive) return;
-  e.preventDefault();
-  isSprinting = false;
-  sprintButton.classList.remove('active');
-}, { passive: false });
+});
 
 // Flashlight toggle
 flashlightToggle.addEventListener('click', () => {
@@ -779,18 +740,10 @@ flashlightToggle.addEventListener('click', () => {
   flashlightToggle.classList.toggle('active', flashlightOn);
 });
 
-// Also make flashlight toggle work with touch
-flashlightToggle.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  flashlightOn = !flashlightOn;
-  flashlight.intensity = flashlightOn ? 200 : 0;
-  flashlightToggle.classList.toggle('active', flashlightOn);
-}, { passive: false });
-
 // Camera control
 let yaw = 0, pitch = 0;
 const lookSensitivity = 0.002;
-const mobileLookSensitivity = 0.003;
+const mobileLookSensitivity = 0.004;
 
 document.addEventListener("mousemove", e => {
   if (document.pointerLockElement === document.body && gameActive && !isMobile) {
@@ -902,14 +855,6 @@ function restartGame() {
   player.rotation.y = 0;
   camera.rotation.x = 0;
   
-  // Reset movement
-  movementTouch = { x: 0, y: 0 };
-  lookTouch = { x: 0, y: 0 };
-  isSprinting = false;
-  moveTouchId = null;
-  lookTouchId = null;
-  
-  // Reset UI
   document.getElementById('info').style.display = 'block';
   document.getElementById('staminaContainer').style.display = 'block';
   document.getElementById('warning').style.display = 'block';
@@ -919,15 +864,8 @@ function restartGame() {
   if (isMobile) {
     document.getElementById('mobileControls').style.display = 'block';
     document.getElementById('flashlightToggle').style.display = 'block';
-    document.getElementById('info').style.display = 'none';
   }
   
-  // Reset visual knobs
-  movementKnob.style.transform = 'translate(-50%, -50%)';
-  lookKnob.style.transform = 'translate(-50%, -50%)';
-  sprintButton.classList.remove('active');
-  
-  // Reset audio
   ambientSound.currentTime = 0;
   chaseSound.currentTime = 0;
   chaseSound.volume = 0;
@@ -950,7 +888,6 @@ function startGame() {
   if (isMobile) {
     document.getElementById('mobileControls').style.display = 'block';
     document.getElementById('info').style.display = 'none';
-    document.getElementById('flashlightToggle').style.display = 'block';
   } else {
     document.body.requestPointerLock();
   }
@@ -1068,12 +1005,12 @@ function updateChaser(delta) {
 let lastTime = performance.now();
 function animate(time) {
   requestAnimationFrame(animate);
-  const delta = Math.min(0.1, (time - lastTime)/1000); // Cap delta to prevent large jumps
+  const delta = (time - lastTime)/1000;
   lastTime = time;
 
   if (gameActive && !jumpscareActive) {
     // Update look from mobile controls
-    if (isMobile && lookTouch.x !== 0) {
+    if (isMobile && lookTouchId !== null) {
       yaw -= lookTouch.x * mobileLookSensitivity * 60 * delta;
       pitch -= lookTouch.y * mobileLookSensitivity * 60 * delta;
       pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch));
@@ -1112,11 +1049,10 @@ function animate(time) {
     } 
     // Mobile controls
     else if (moveTouchId !== null) {
-      // Use joystick input directly
       moveX = movementTouch.x * speed * 2;
       moveZ = -movementTouch.y * speed * 2;
       
-      // Convert joystick direction to world space
+      // Convert local movement to world space
       const worldMoveX = forward.x * moveZ + right.x * moveX;
       const worldMoveZ = forward.z * moveZ + right.z * moveX;
       moveX = worldMoveX;
@@ -1137,7 +1073,6 @@ function animate(time) {
   renderer.render(scene, camera);
 }
 
-// Initialize the game
 animate(performance.now());
 
 // Handle window resize
@@ -1148,22 +1083,11 @@ window.addEventListener('resize', () => {
   updatePadRects();
 });
 
-// Initial update of pad rects
+// Initial update
 updatePadRects();
-
-// Update pad rects on orientation change
-window.addEventListener('orientationchange', () => {
-  setTimeout(updatePadRects, 100);
-});
 
 // Prevent context menu on long press
 document.addEventListener('contextmenu', e => e.preventDefault());
-
-// Prevent text selection
-document.addEventListener('selectstart', e => e.preventDefault());
-
-// Log for debugging
-console.log("Mobile controls initialized. isMobile:", isMobile);
 </script>
 </body>
 </html>
