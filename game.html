@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Night Forest FPS with Flashlight & Chaser</title>
+<style>
+  body { margin: 0; overflow: hidden; touch-action: none; }
+  canvas { display: block; }
+
+  #info {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: white;
+    font-family: Arial;
+    background: rgba(0,0,0,0.5);
+    padding: 8px;
+    border-radius: 4px;
+    z-index: 10;
+    font-size: 12px;
+  }
+
+  #staminaContainer {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 16px;
+    background: #333;
+    border: 2px solid #000;
+    z-index: 10;
+  }
+
+  #staminaBar {
+    height: 100%;
+    width: 100%;
+    background: limegreen;
+    transition: width 0.1s;
+  }
+
+  #warning {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ff4444;
+    font-family: Arial;
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 0 0 10px #ff0000;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 10;
+    text-align: center;
+    padding: 10px;
+  }
+
+  /* Mobile Controls */
+  #mobileControls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40%;
+    display: none;
+    z-index: 50;
+    pointer-events: none;
+  }
+
+  #movementPad {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    width: 120px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    pointer-events: auto;
+    touch-action: none;
+  }
+
+  #movementHandle {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s;
+  }
+
+  #lookPad {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    width: 120px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    pointer-events: auto;
+    touch-action: none;
+  }
+
+  #lookHandle {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s;
+  }
+
+  #sprintButton {
+    position: absolute;
+    bottom: 160px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 80px;
+    background: rgba(0, 255, 0, 0.5);
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    color: white;
+    font-family: Arial;
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  #sprintButton.active {
+    background: rgba(0, 200, 0, 0.8);
+    transform: translateX(-50%) scale(0.95);
+  }
+
+  #flashlightToggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-family: Arial;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+    z-index: 10;
+  }
+
+  #flashlightToggle.active {
+    background: rgba(255, 255, 0, 0.4);
+  }
+
+  #startScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 200;
+    font-family: 'Arial', sans-serif;
+    text-align: center;
+    padding: 20px;
+  }
+
+  #startTitle {
+    font-size: 36px;
+    color: #ff4444;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px #ff0000;
+  }
+
+  #startText {
+    font-size: 18px;
+    margin-bottom: 40px;
+    color: #cccccc;
+    max-width: 90%;
+  }
+
+  #startButton {
+    background: #ff0000;
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s, transform 0.2s;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+
+  #startButton:hover, #startButton:active {
+    background: #cc0000;
+    transform: scale(1.05);
+  }
+
+  /* Game Over Screen */
+  #gameOverScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: white;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 100;
+    font-family: 'Arial', sans-serif;
+    text-align: center;
+    padding: 20px;
+  }
+
+  #gameOverTitle {
+    font-size: 48px;
+    color: #ff0000;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px #ff0000;
+    animation: pulse 1.5s infinite;
+  }
+
+  #gameOverText {
+    font-size: 18px;
+    margin-bottom: 40px;
+    color: #ff6666;
+  }
+
+  #restartButton {
+    background: #ff0000;
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s, transform 0.2s;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+
+  #restartButton:hover, #restartButton:active {
+    background: #cc0000;
+    transform: scale(1.05);
+  }
+
+  @keyframes pulse {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+  }
+
+  /* Jumpscare Screen */
+  #jumpscareScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    display: none;
+    z-index: 200;
+  }
+
+  @media (max-width: 768px) {
+    #info { font-size: 10px; padding: 5px; }
+    #warning { font-size: 16px; }
+    #movementPad, #lookPad { width: 100px; height: 100px; }
+    #sprintButton { width: 70px; height: 70px; font-size: 12px; }
+    #flashlightToggle { width: 50px; height: 50px; font-size: 10px; }
+  }
+
+  @media (max-width: 480px) {
+    #movementPad, #lookPad { 
+      width: 90px; 
+      height: 90px; 
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+    }
+    #movementHandle, #lookHandle { width: 40px; height: 40px; }
+    #sprintButton { 
+      width: 60px; 
+      height: 60px; 
+      bottom: 130px;
+      font-size: 10px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="info">
+  WASD move | Shift sprint | Mouse look<br>
+  <span id="deviceInfo">Desktop Mode</span>
+</div>
+
+<div id="staminaContainer">
+  <div id="staminaBar"></div>
+</div>
+
+<div id="warning">!! DANGER CLOSE !!</div>
+
+<!-- Mobile Controls -->
+<div id="mobileControls">
+  <div id="movementPad">
+    <div id="movementHandle"></div>
+  </div>
+  <div id="lookPad">
+    <div id="lookHandle"></div>
+  </div>
+  <div id="sprintButton">SPRINT</div>
+</div>
+
+<div id="flashlightToggle">FLASHLIGHT</div>
+
+<!-- Start Screen -->
+<div id="startScreen">
+  <h1 id="startTitle">DARK FOREST HORROR</h1>
+  <p id="startText">Navigate through the dark forest with your flashlight. Avoid the creature that hunts you in the darkness. Use WASD to move, Shift to sprint, and mouse to look around on desktop. On mobile, use the touch controls.</p>
+  <button id="startButton">START GAME</button>
+</div>
+
+<!-- Game Over Screen -->
+<div id="gameOverScreen">
+  <h1 id="gameOverTitle">YOU DIED</h1>
+  <p id="gameOverText">The creature caught you in the dark forest...</p>
+  <button id="restartButton">TRY AGAIN</button>
+</div>
+
+<!-- Jumpscare Screen -->
+<div id="jumpscareScreen">
+  <!-- Will be filled dynamically -->
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+// -------- GAME STATE --------
+let gameActive = false;
+let jumpscareActive = false;
+let isMobile = false;
+
+// Detect mobile device
+function detectMobile() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+         window.innerWidth <= 768;
+}
+
+isMobile = detectMobile();
+document.getElementById('deviceInfo').textContent = isMobile ? 'Mobile Mode' : 'Desktop Mode';
+
+// -------- SOUNDS --------
+// Load sounds from asset folder
+const jumpscareSound = new Audio('asset/jumpscare.mp3');
+const chaseSound = new Audio('asset/chase.mp3'); // You can add chase.mp3 to asset folder
+const ambientSound = new Audio('asset/ambient.mp3'); // You can add ambient.mp3 to asset folder
+
+// Fallback to online sounds if local ones don't exist
+chaseSound.onerror = () => {
+  console.log("Local chase.mp3 not found, using online version");
+  chaseSound.src = 'https://assets.mixkit.co/sfx/preview/mixkit-heartbeat-while-stressed-452.mp3';
+};
+
+ambientSound.onerror = () => {
+  console.log("Local ambient.mp3 not found, using online version");
+  ambientSound.src = 'https://assets.mixkit.co/sfx/preview/mixkit-forest-ambience-573.mp3';
+};
+
+jumpscareSound.onerror = () => {
+  console.error("Could not load jumpscare.mp3 from asset folder. Please ensure the file exists at: asset/jumpscare.mp3");
+};
+
+// Set volume levels
+ambientSound.volume = 0.3;
+chaseSound.volume = 0;
+jumpscareSound.volume = 0.8;
+
+// Set audio to loop
+chaseSound.loop = true;
+ambientSound.loop = true;
+
+// -------- THREE.JS SETUP --------
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000011);
+scene.fog = new THREE.Fog(0x000011, 10, 70);
+
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 100);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.domElement.style.touchAction = 'none';
+document.body.appendChild(renderer.domElement);
+
+// -------- NIGHT LIGHTING --------
+scene.add(new THREE.AmbientLight(0x111111)); // very dim ambient light
+
+// Flashlight as spotlight attached to camera
+const flashlight = new THREE.SpotLight(0xffffff, 200, 500, Math.PI/7, 0.5);
+flashlight.position.set(0, 0, 0);
+flashlight.target.position.set(0, 0, -1);
+camera.add(flashlight);
+camera.add(flashlight.target);
+scene.add(camera);
+
+let flashlightOn = true;
+
+// -------- GROUND --------
+const groundSize = 1200;
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(groundSize, groundSize),
+  new THREE.MeshStandardMaterial({ color: 0x112211 })
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+// -------- PLAYER --------
+const player = new THREE.Object3D();
+player.position.set(0, 1.6, 0);
+scene.add(player);
+player.add(camera);
+
+// -------- CHASING ENTITY --------
+let chaser = null;
+let chaserSpeed = 3.5;
+let chaserDetectionRange = 40;
+let chaserMinSpeed = 2.0;
+let chaserMaxSpeed = 5.0;
+let chaserCloseDistance = 8;
+let chaserColliderRadius = 1.2;
+
+function createChaser() {
+  const chaserGroup = new THREE.Group();
+  
+  const bodyGeometry = new THREE.SphereGeometry(1, 8, 8);
+  const bodyMaterial = new THREE.MeshBasicMaterial({ 
+    color: 0xff2222,
+    emissive: 0xff0000,
+    emissiveIntensity: 0.8
+  });
+  const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+  chaserGroup.add(body);
+  
+  const eyeGeometry = new THREE.SphereGeometry(0.25, 6, 6);
+  const eyeMaterial = new THREE.MeshBasicMaterial({ 
+    color: 0xffffff,
+    emissive: 0xffffff,
+    emissiveIntensity: 1.0
+  });
+  
+  const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+  leftEye.position.set(-0.4, 0.3, 0.8);
+  chaserGroup.add(leftEye);
+  
+  const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+  rightEye.position.set(0.4, 0.3, 0.8);
+  chaserGroup.add(rightEye);
+  
+  chaserGroup.userData.pulseSpeed = 2 + Math.random();
+  chaserGroup.userData.pulseTime = Math.random() * Math.PI * 2;
+  chaserGroup.userData.originalScale = 1;
+  
+  const angle = Math.random() * Math.PI * 2;
+  const distance = 50 + Math.random() * 30;
+  chaserGroup.position.set(
+    Math.cos(angle) * distance,
+    1.5,
+    Math.sin(angle) * distance
+  );
+  
+  scene.add(chaserGroup);
+  return chaserGroup;
+}
+
+chaser = createChaser();
+
+// -------- TREES & BUSHES --------
+const treeColliders = [];
+const playerRadius = 0.4;
+
+function createTree(x, z) {
+  const tree = new THREE.Group();
+  const trunkHeight = 2 + Math.random() * 3.5;
+  const trunkRadius = 0.35 + Math.random() * 0.2;
+
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(trunkRadius, trunkRadius, trunkHeight),
+    new THREE.MeshStandardMaterial({ color: 0x4b2e1e })
+  );
+  trunk.position.y = trunkHeight / 2;
+  tree.add(trunk);
+
+  const leaves = new THREE.Mesh(
+    new THREE.SphereGeometry(1.2 + Math.random() * 1.2, 7, 7),
+    new THREE.MeshStandardMaterial({ color: 0x0f3f1f })
+  );
+  leaves.position.y = trunkHeight + 1.1;
+  tree.add(leaves);
+
+  tree.position.set(x, 0, z);
+  scene.add(tree);
+
+  treeColliders.push({x, z, radius: trunkRadius + 0.6});
+}
+
+function createBush(x, z) {
+  const bush = new THREE.Mesh(
+    new THREE.SphereGeometry(0.35 + Math.random() * 0.6, 6, 6),
+    new THREE.MeshStandardMaterial({
+      color: new THREE.Color().setHSL(0.32, 0.55, 0.22 + Math.random()*0.2)
+    })
+  );
+  bush.position.set(x, 0.3, z);
+  scene.add(bush);
+}
+
+// ---------------- GENERATE FOREST ----------------
+const minDistance = 0.9;
+let attempts = 0;
+for (let i = 0; i < 2000; i++) {
+  let placed = false;
+  while (!placed && attempts < 15000) {
+    attempts++;
+    const x = (Math.random() - 0.5) * groundSize;
+    const z = (Math.random() - 0.5) * groundSize;
+    if (Math.abs(x) < 8 && Math.abs(z) < 8) continue;
+
+    let tooClose = false;
+    for (const t of treeColliders) {
+      const dx = x - t.x;
+      const dz = z - t.z;
+      if (Math.sqrt(dx*dx + dz*dz) < minDistance + t.radius) {
+        tooClose = true;
+        break;
+      }
+    }
+
+    if (!tooClose) {
+      createTree(x, z);
+      placed = true;
+    }
+  }
+}
+
+for (let i = 0; i < 4000; i++) {
+  const x = (Math.random() - 0.5) * groundSize;
+  const z = (Math.random() - 0.5) * groundSize;
+  createBush(x, z);
+}
+
+// -------- INPUT & CONTROLS --------
+const keys = {};
+let moveTouchId = null;
+let lookTouchId = null;
+let movementTouch = { x: 0, y: 0 };
+let lookTouch = { x: 0, y: 0 };
+let isSprinting = false;
+
+// Desktop controls
+document.addEventListener("keydown", e => {
+  if (gameActive && !jumpscareActive) {
+    keys[e.code] = true;
+  }
+});
+document.addEventListener("keyup", e => {
+  keys[e.code] = false;
+});
+
+// Mobile touch controls
+const movementPad = document.getElementById('movementPad');
+const movementHandle = document.getElementById('movementHandle');
+const lookPad = document.getElementById('lookPad');
+const lookHandle = document.getElementById('lookHandle');
+const sprintButton = document.getElementById('sprintButton');
+const flashlightToggle = document.getElementById('flashlightToggle');
+
+let movementPadRect, lookPadRect;
+
+function updatePadRects() {
+  movementPadRect = movementPad.getBoundingClientRect();
+  lookPadRect = lookPad.getBoundingClientRect();
+}
+
+// Movement pad
+movementPad.addEventListener('touchstart', (e) => {
+  if (!gameActive || jumpscareActive) return;
+  e.preventDefault();
+  if (moveTouchId === null) {
+    const touch = e.changedTouches[0];
+    moveTouchId = touch.identifier;
+    updateMovementPad(touch);
+  }
+});
+
+movementPad.addEventListener('touchmove', (e) => {
+  if (!gameActive || jumpscareActive) return;
+  e.preventDefault();
+  for (let touch of e.changedTouches) {
+    if (touch.identifier === moveTouchId) {
+      updateMovementPad(touch);
+      break;
+    }
+  }
+});
+
+movementPad.addEventListener('touchend', (e) => {
+  if (!gameActive || jumpscareActive) return;
+  e.preventDefault();
+  for (let touch of e.changedTouches) {
+    if (touch.identifier === moveTouchId) {
+      moveTouchId = null;
+      movementTouch = { x: 0, y: 0 };
+      movementHandle.style.transform = 'translate(-50%, -50%)';
+      break;
+    }
+  }
+});
+
+function updateMovementPad(touch) {
+  const rect = movementPadRect || movementPad.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  
+  let x = (touch.clientX - centerX) / (rect.width / 2);
+  let y = (touch.clientY - centerY) / (rect.height / 2);
+  
+  // Limit to circle
+  const length = Math.sqrt(x * x + y * y);
+  if (length > 1) {
+    x /= length;
+    y /= length;
+  }
+  
+  movementTouch = { x, y };
+  movementHandle.style.transform = `translate(${x * 50}%, ${y * 50}%)`;
+}
+
+// Look pad
+lookPad.addEventListener('touchstart', (e) => {
+  if (!gameActive || jumpscareActive) return;
+  e.preventDefault();
+  if (lookTouchId === null) {
+    const touch = e.changedTouches[0];
+    lookTouchId = touch.identifier;
+    updateLookPad(touch);
+  }
+});
+
+lookPad.addEventListener('touchmove', (e) => {
+  if (!gameActive || jumpscareActive) return;
+  e.preventDefault();
+  for (let touch of e.changedTouches) {
+    if (touch.identifier === lookTouchId) {
+      updateLookPad(touch);
+      break;
+    }
+  }
+});
+
+lookPad.addEventListener('touchend', (e) => {
+  if (!gameActive || jumpscareActive) return;
+  e.preventDefault();
+  for (let touch of e.changedTouches) {
+    if (touch.identifier === lookTouchId) {
+      lookTouchId = null;
+      lookTouch = { x: 0, y: 0 };
+      lookHandle.style.transform = 'translate(-50%, -50%)';
+      break;
+    }
+  }
+});
+
+function updateLookPad(touch) {
+  const rect = lookPadRect || lookPad.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  
+  let x = (touch.clientX - centerX) / (rect.width / 2);
+  let y = (touch.clientY - centerY) / (rect.height / 2);
+  
+  const length = Math.sqrt(x * x + y * y);
+  if (length > 1) {
+    x /= length;
+    y /= length;
+  }
+  
+  lookTouch = { x, y };
+  lookHandle.style.transform = `translate(${x * 50}%, ${y * 50}%)`;
+}
+
+// Sprint button
+sprintButton.addEventListener('touchstart', (e) => {
+  if (!gameActive || jumpscareActive) return;
+  e.preventDefault();
+  isSprinting = true;
+  sprintButton.classList.add('active');
+});
+
+sprintButton.addEventListener('touchend', (e) => {
+  if (!gameActive || jumpscareActive) return;
+  e.preventDefault();
+  isSprinting = false;
+  sprintButton.classList.remove('active');
+});
+
+// Flashlight toggle
+flashlightToggle.addEventListener('click', () => {
+  flashlightOn = !flashlightOn;
+  flashlight.intensity = flashlightOn ? 200 : 0;
+  flashlightToggle.classList.toggle('active', flashlightOn);
+});
+
+// Camera control
+let yaw = 0, pitch = 0;
+const lookSensitivity = 0.002;
+const mobileLookSensitivity = 0.004;
+
+document.addEventListener("mousemove", e => {
+  if (document.pointerLockElement === document.body && gameActive && !isMobile) {
+    yaw -= e.movementX * lookSensitivity;
+    pitch -= e.movementY * lookSensitivity;
+    pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch));
+  }
+});
+
+// -------- STAMINA --------
+let stamina = 100;
+const maxStamina = 100;
+const drainRate = 25;
+const regenRate = 15;
+const staminaBar = document.getElementById("staminaBar");
+
+// -------- COLLISION --------
+function collides(x, z, radius = playerRadius) {
+  for (const t of treeColliders) {
+    const dx = x - t.x;
+    const dz = z - t.z;
+    if (Math.sqrt(dx*dx + dz*dz) < t.radius + radius) return true;
+  }
+  return false;
+}
+
+// -------- JUMPSCARE & GAME OVER --------
+function triggerJumpscare() {
+  if (!gameActive) return;
+  
+  gameActive = false;
+  jumpscareActive = true;
+  
+  ambientSound.pause();
+  chaseSound.pause();
+  
+  document.getElementById('info').style.display = 'none';
+  document.getElementById('staminaContainer').style.display = 'none';
+  document.getElementById('warning').style.display = 'none';
+  document.getElementById('mobileControls').style.display = 'none';
+  document.getElementById('flashlightToggle').style.display = 'none';
+  
+  const jumpscareScreen = document.getElementById('jumpscareScreen');
+  jumpscareScreen.style.background = '#ff0000';
+  jumpscareScreen.style.display = 'block';
+  jumpscareScreen.innerHTML = `
+    <div style="
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Arial', sans-serif;
+      font-size: ${isMobile ? '60px' : '120px'};
+      font-weight: bold;
+      color: black;
+      text-shadow: 0 0 30px white;
+      animation: shake 0.1s infinite;
+      text-align: center;
+      padding: 20px;
+    ">
+      GOT YOU!
+    </div>
+    <style>
+      @keyframes shake {
+        0% { transform: translate(1px, 1px) rotate(0deg); }
+        10% { transform: translate(-1px, -2px) rotate(-1deg); }
+        20% { transform: translate(-3px, 0px) rotate(1deg); }
+        30% { transform: translate(3px, 2px) rotate(0deg); }
+        40% { transform: translate(1px, -1px) rotate(1deg); }
+        50% { transform: translate(-1px, 2px) rotate(-1deg); }
+        60% { transform: translate(-3px, 1px) rotate(0deg); }
+        70% { transform: translate(3px, 1px) rotate(-1deg); }
+        80% { transform: translate(-1px, -1px) rotate(1deg); }
+        90% { transform: translate(1px, 2px) rotate(0deg); }
+        100% { transform: translate(1px, -2px) rotate(-1deg); }
+      }
+    </style>
+  `;
+  
+  jumpscareSound.currentTime = 0;
+  jumpscareSound.play().catch(e => console.log("Jumpscare sound failed:", e));
+  
+  setTimeout(() => {
+    jumpscareScreen.style.display = 'none';
+    document.getElementById('gameOverScreen').style.display = 'flex';
+  }, 2000);
+}
+
+function restartGame() {
+  gameActive = true;
+  jumpscareActive = false;
+  
+  player.position.set(0, 1.6, 0);
+  
+  const angle = Math.random() * Math.PI * 2;
+  const distance = 50 + Math.random() * 30;
+  chaser.position.set(
+    Math.cos(angle) * distance,
+    1.5,
+    Math.sin(angle) * distance
+  );
+  
+  stamina = 100;
+  staminaBar.style.width = '100%';
+  
+  yaw = 0;
+  pitch = 0;
+  player.rotation.y = 0;
+  camera.rotation.x = 0;
+  
+  document.getElementById('info').style.display = 'block';
+  document.getElementById('staminaContainer').style.display = 'block';
+  document.getElementById('warning').style.display = 'block';
+  document.getElementById('gameOverScreen').style.display = 'none';
+  document.body.style.backgroundColor = '';
+  
+  if (isMobile) {
+    document.getElementById('mobileControls').style.display = 'block';
+    document.getElementById('flashlightToggle').style.display = 'block';
+  }
+  
+  ambientSound.currentTime = 0;
+  chaseSound.currentTime = 0;
+  chaseSound.volume = 0;
+  ambientSound.play().catch(e => console.log("Audio play failed:", e));
+  
+  if (document.pointerLockElement === document.body) {
+    document.exitPointerLock();
+  }
+}
+
+document.getElementById('restartButton').addEventListener('click', restartGame);
+
+// Start game
+document.getElementById('startButton').addEventListener('click', startGame);
+
+function startGame() {
+  gameActive = true;
+  document.getElementById('startScreen').style.display = 'none';
+  
+  if (isMobile) {
+    document.getElementById('mobileControls').style.display = 'block';
+    document.getElementById('info').style.display = 'none';
+  } else {
+    document.body.requestPointerLock();
+  }
+  
+  ambientSound.play().catch(e => console.log("Audio play failed:", e));
+}
+
+// -------- CHASER AI --------
+function updateChaser(delta) {
+  if (!chaser || !gameActive || jumpscareActive) return;
+  
+  const warningElement = document.getElementById('warning');
+  const dx = player.position.x - chaser.position.x;
+  const dz = player.position.z - chaser.position.z;
+  const distanceToPlayer = Math.sqrt(dx*dx + dz*dz);
+  
+  if (distanceToPlayer < chaserDetectionRange) {
+    const chaseVolume = Math.max(0, 0.6 * (1 - distanceToPlayer / chaserDetectionRange));
+    chaseSound.volume = chaseVolume;
+    
+    if (chaseSound.paused) {
+      chaseSound.play().catch(e => console.log("Chase sound failed:", e));
+    }
+  } else {
+    chaseSound.volume = 0;
+  }
+  
+  if (distanceToPlayer < 15) {
+    warningElement.style.opacity = Math.max(0.3, 1 - (distanceToPlayer / 15));
+    if (distanceToPlayer < 8) {
+      warningElement.textContent = "!!! EXTREME DANGER !!!";
+    } else {
+      warningElement.textContent = "!! DANGER CLOSE !!";
+    }
+  } else {
+    warningElement.style.opacity = 0;
+  }
+  
+  if (distanceToPlayer > chaserDetectionRange) {
+    chaser.userData.wanderTime = (chaser.userData.wanderTime || 0) + delta;
+    if (chaser.userData.wanderTime > 2 || !chaser.userData.wanderDirection) {
+      chaser.userData.wanderTime = 0;
+      const angle = Math.random() * Math.PI * 2;
+      chaser.userData.wanderDirection = new THREE.Vector3(
+        Math.cos(angle),
+        0,
+        Math.sin(angle)
+      );
+    }
+    
+    const wanderSpeed = 1.5;
+    const newX = chaser.position.x + chaser.userData.wanderDirection.x * wanderSpeed * delta;
+    const newZ = chaser.position.z + chaser.userData.wanderDirection.z * wanderSpeed * delta;
+    
+    if (!collides(newX, newZ, chaserColliderRadius) && 
+        Math.abs(newX) < groundSize/2 - 10 && 
+        Math.abs(newZ) < groundSize/2 - 10) {
+      chaser.position.x = newX;
+      chaser.position.z = newZ;
+    }
+    
+    if (chaser.userData.wanderDirection.length() > 0.1) {
+      chaser.lookAt(
+        chaser.position.x + chaser.userData.wanderDirection.x,
+        chaser.position.y,
+        chaser.position.z + chaser.userData.wanderDirection.z
+      );
+    }
+    
+    return;
+  }
+  
+  const direction = new THREE.Vector3(dx, 0, dz).normalize();
+  
+  let speedMultiplier = 1.0;
+  if (distanceToPlayer < chaserCloseDistance) {
+    speedMultiplier = chaserMaxSpeed / chaserSpeed;
+  } else {
+    const t = 1 - Math.min(1, distanceToPlayer / chaserDetectionRange);
+    speedMultiplier = (chaserMinSpeed + t * (chaserMaxSpeed - chaserMinSpeed)) / chaserSpeed;
+  }
+  
+  const adjustedSpeed = chaserSpeed * speedMultiplier;
+  const moveX = direction.x * adjustedSpeed * delta;
+  const moveZ = direction.z * adjustedSpeed * delta;
+  
+  const newX = chaser.position.x + moveX;
+  const newZ = chaser.position.z + moveZ;
+  
+  if (!collides(newX, newZ, chaserColliderRadius)) {
+    chaser.position.x = newX;
+    chaser.position.z = newZ;
+  } else {
+    const perpX = -direction.z * adjustedSpeed * delta;
+    const perpZ = direction.x * adjustedSpeed * delta;
+    
+    if (!collides(chaser.position.x + perpX, chaser.position.z + perpZ, chaserColliderRadius)) {
+      chaser.position.x += perpX;
+      chaser.position.z += perpZ;
+    }
+  }
+  
+  chaser.lookAt(player.position.x, chaser.position.y, player.position.z);
+  
+  chaser.userData.pulseTime += delta * chaser.userData.pulseSpeed;
+  const pulseScale = 1 + 0.1 * Math.sin(chaser.userData.pulseTime);
+  chaser.scale.setScalar(pulseScale);
+  
+  if (distanceToPlayer < 2.5) {
+    triggerJumpscare();
+  }
+}
+
+// -------- GAME LOOP --------
+let lastTime = performance.now();
+function animate(time) {
+  requestAnimationFrame(animate);
+  const delta = (time - lastTime)/1000;
+  lastTime = time;
+
+  if (gameActive && !jumpscareActive) {
+    // Update look from mobile controls
+    if (isMobile && lookTouchId !== null) {
+      yaw -= lookTouch.x * mobileLookSensitivity * 60 * delta;
+      pitch -= lookTouch.y * mobileLookSensitivity * 60 * delta;
+      pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch));
+    }
+    
+    let speed = 0.1;
+    
+    // Check sprint (desktop or mobile)
+    const sprinting = (keys["ShiftLeft"] || isSprinting) && stamina > 0;
+    if (sprinting) {
+      speed = 0.25;
+      stamina -= drainRate * delta;
+    } else {
+      stamina += regenRate * delta;
+    }
+
+    stamina = Math.max(0, Math.min(maxStamina, stamina));
+    
+    if (stamina <= 0) {
+      speed = 0.1;
+    }
+    
+    staminaBar.style.width = (stamina/maxStamina*100) + "%";
+
+    const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+    const right = new THREE.Vector3(Math.sin(yaw+Math.PI/2), 0, Math.cos(yaw+Math.PI/2));
+
+    let moveX = 0, moveZ = 0;
+    
+    // Desktop controls
+    if (!isMobile) {
+      if (keys["KeyW"]) { moveX -= forward.x*speed; moveZ -= forward.z*speed; }
+      if (keys["KeyS"]) { moveX += forward.x*speed; moveZ += forward.z*speed; }
+      if (keys["KeyA"]) { moveX -= right.x*speed; moveZ -= right.z*speed; }
+      if (keys["KeyD"]) { moveX += right.x*speed; moveZ += right.z*speed; }
+    } 
+    // Mobile controls
+    else if (moveTouchId !== null) {
+      moveX = movementTouch.x * speed * 2;
+      moveZ = -movementTouch.y * speed * 2;
+      
+      // Convert local movement to world space
+      const worldMoveX = forward.x * moveZ + right.x * moveX;
+      const worldMoveZ = forward.z * moveZ + right.z * moveX;
+      moveX = worldMoveX;
+      moveZ = worldMoveZ;
+    }
+
+    if (!collides(player.position.x + moveX, player.position.z))
+      player.position.x += moveX;
+    if (!collides(player.position.x, player.position.z + moveZ))
+      player.position.z += moveZ;
+
+    player.rotation.y = yaw;
+    camera.rotation.x = pitch;
+    
+    updateChaser(delta);
+  }
+
+  renderer.render(scene, camera);
+}
+
+animate(performance.now());
+
+// Handle window resize
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  updatePadRects();
+});
+
+// Initial update
+updatePadRects();
+
+// Prevent context menu on long press
+document.addEventListener('contextmenu', e => e.preventDefault());
+</script>
+</body>
+</html>
